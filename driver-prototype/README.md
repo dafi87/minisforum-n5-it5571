@@ -1,8 +1,8 @@
 # Minisforum N5 family / IT5571 hwmon driver
 
 This driver exposes the Minisforum N5 IT5571 fan controller and EC
-temperatures through the standard Linux hwmon ABI. Build it for the running
-kernel; see the [Proxmox setup guide](../docs/PROXMOX.md).
+temperatures through the standard Linux hwmon ABI. For DKMS installation and
+kernel updates, see the [Proxmox setup guide](../docs/PROXMOX.md).
 
 N5/F8NAA is validated. N5 Pro/F8NAA and N5 Air/F8NAB are experimental and
 load in read-only sensor mode unless `experimental_write=1` is explicitly set.

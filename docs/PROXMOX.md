@@ -16,53 +16,109 @@ found that CPU fan channels did not return to firmware control after PWM
 writes until reboot; do not assume restoring automatic mode works on this
 profile. This does not apply to a read-only session that has made no PWM writes.
 
-Build the module on the Proxmox host against the headers for its running
-kernel. The following assumes `make`, a C compiler, Python 3, and matching
-headers are already installed:
+## Install with DKMS
+
+On the Proxmox host, install DKMS and the build tools, and verify that the
+running kernel's headers are present:
 
 ```bash
+sudo apt install dkms build-essential
 uname -r
-ls -ld "/lib/modules/$(uname -r)/build"
-cd driver-prototype
-make
-modinfo -F vermagic ./minisforum_n5_it5571.ko
+ls -l "/lib/modules/$(uname -r)/build/Makefile"
 ```
 
-The first word of the vermagic must match `uname -r`. If build tools or headers
-are missing, install the distribution's matching packages before building.
-Secure Boot may reject an unsigned module; do not bypass the host's security
-policy to load it.
-
-Test manually, without enabling PWM writes:
+If the header check fails, install the headers matching `uname -r`:
 
 ```bash
-sudo insmod ./minisforum_n5_it5571.ko
+sudo apt install "proxmox-headers-$(uname -r)"
+```
+
+For automatic rebuilds after future updates, also install the header metapackage
+for the kernel series you follow. For the reported 7.0 series:
+
+```bash
+apt-cache depends proxmox-headers-7.0
+sudo apt install proxmox-headers-7.0
+```
+
+Check APT's proposed changes before accepting: the metapackage may bring in
+newer headers and kernel packages. `proxmox-default-headers` instead tracks the
+default kernel series; choose the metapackage matching your update policy.
+
+From the repository root, copy a clean source snapshot to DKMS and install it
+for the running kernel:
+
+```bash
+cd driver-prototype
+sudo mkdir /usr/src/minisforum_n5_it5571-0.2.0 &&
+  sudo install -m 0644 dkms.conf Makefile minisforum_n5_it5571.c /usr/src/minisforum_n5_it5571-0.2.0/ &&
+  sudo dkms add -m minisforum_n5_it5571 -v 0.2.0 &&
+  sudo dkms install -m minisforum_n5_it5571 -v 0.2.0 -k "$(uname -r)"
+```
+
+The `mkdir` intentionally fails rather than overwrite an existing source
+snapshot. If DKMS installation fails after registration, resolve the reported
+error and rerun the `dkms install` command; consult `dkms status` and
+`/var/lib/dkms/minisforum_n5_it5571/0.2.0/build/make.log` for details.
+
+If the module is already loaded from an earlier manual test, unload it first
+while still in read-only mode:
+
+```bash
+sudo rmmod minisforum_n5_it5571
+```
+
+Then test the DKMS-installed module, without enabling PWM writes:
+
+```bash
+sudo modprobe minisforum_n5_it5571
+dkms status minisforum_n5_it5571/0.2.0
+modinfo -n minisforum_n5_it5571
+modinfo -F vermagic minisforum_n5_it5571
 dmesg | tail -n 50
 cd ..
 python3 ./n5-sensors.py
 python3 ./n5-sensors.py --json
 ```
 
-A successful `insmod` does not necessarily mean the device bound: check the
-driver's messages and the CLI output. If a port is busy, do not force access or
-disable an existing EC driver; investigate the conflict first. An empty
-`/proc/ioports` grep alone does not establish that the EC is compatible or
-uncontended. Compare readings against BIOS and other trusted sensors, and
+Confirm DKMS reports the module installed for the running kernel, `modinfo -n`
+points to the DKMS-installed module, and the first word of vermagic matches
+`uname -r`. A successful `modprobe` does not necessarily mean the device bound:
+check the driver's messages and CLI output. If a port is busy, do not force
+access or disable an existing EC driver; investigate the conflict first. An
+empty `/proc/ioports` grep alone does not establish EC compatibility or absence
+of contention. Compare readings against BIOS and other trusted sensors, and
 confirm physical fan/channel mappings before relying on them.
 
-Once tested, install the module for the current kernel and arrange to load it
-at boot:
+Secure Boot may reject a module if its signing key is not enrolled. Follow the
+host's signing and key-enrollment policy; do not disable Secure Boot to load it.
+
+Only after verifying the readings, configure loading at boot:
 
 ```bash
-cd driver-prototype
-sudo make -C "/lib/modules/$(uname -r)/build" M="$PWD" modules_install
-sudo depmod -a
 echo minisforum_n5_it5571 | sudo tee /etc/modules-load.d/minisforum-n5-it5571.conf
 ```
 
-Rebuild and reinstall against the new running kernel after each kernel update.
-To stop using the driver, remove that modules-load configuration and run
-`sudo modprobe -r minisforum_n5_it5571`; reboot if it cannot be unloaded.
+DKMS attempts to build and install this version for new kernels automatically
+when their matching headers are installed. Check `dkms status` and the package
+installation output after kernel updates; a missing header, changed kernel API,
+or signing failure can prevent the module from loading. Keep a working kernel
+available for rollback. The source in `/usr/src/minisforum_n5_it5571-0.2.0` is
+a snapshot: changes in the checkout do not update it. Use a new DKMS version
+for a source update; do not overwrite an installed version in place.
+
+To uninstall, remove the modules-load configuration, unload the driver, and
+remove its DKMS registration:
+
+```bash
+sudo rm /etc/modules-load.d/minisforum-n5-it5571.conf
+sudo modprobe -r minisforum_n5_it5571
+sudo dkms remove -m minisforum_n5_it5571 -v 0.2.0 --all
+```
+
+DKMS may restore a previously installed same-named module when removing its
+version. Check `dkms status` and `modinfo -n minisforum_n5_it5571` before
+assuming no module remains; the source snapshot may also remain under `/usr/src`.
 
 ## CLI and scripts
 

@@ -4,6 +4,7 @@
 
 - `minisforum_n5_it5571.c`: Linux hwmon driver source; N5 validated, N5 Pro/Air experimental.
 - `Makefile`: external kernel-module build file.
+- `dkms.conf`: DKMS module registration and automatic rebuild configuration.
 - `README.md`: driver and channel notes.
 
 The public module and hwmon name is `minisforum_n5_it5571`.

@@ -25,8 +25,8 @@ readable or JSON form for use in scripts.
 | Minisforum N5 Air / `N5A` or `N5 AIR` | `F8NAB` | Experimental | Read-only sensors |
 
 The original N5/F8NAA was tested with BIOS 1.04. N5 Air sensor mappings and
-Proxmox builds have **not** been hardware-validated. The module must be built
-for the running kernel and rebuilt after kernel updates.
+Proxmox builds have **not** been hardware-validated. DKMS builds the module
+for matching installed kernels; kernel updates can still require driver fixes.
 
 Unknown DMI pairs are rejected unless a developer uses
 the read-only `force=1` override.
@@ -58,8 +58,8 @@ unavailable.
 
 ## Installation
 
-See the [Proxmox setup guide](docs/PROXMOX.md) for building and loading the
-module, validating the readings, and configuring it at boot. Once loaded:
+See the [Proxmox setup guide](docs/PROXMOX.md) for DKMS installation, validating
+the readings, and configuring the module to load at boot. Once loaded:
 
 ```bash
 python3 n5-sensors.py
