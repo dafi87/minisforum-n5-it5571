@@ -12,7 +12,8 @@ readable or JSON form for use in scripts.
 ## Features
 
 - CPU, SSD and HDD fan RPM; PCIe RPM is unavailable.
-- CPU, System, Board and Ambient temperatures.
+- CPU and System temperatures; Board and Ambient on N5/F8NAA.
+- DDR5 SPD5118 memory and Realtek r8169 PHY temperatures when available.
 - JSON output for integration with scripts.
 
 ## Compatibility
@@ -50,7 +51,8 @@ Do not enable experimental PWM writes on the N5 Air while validating sensors.
 | `temp3_input` | Board Temp |
 | `temp4_input` | Ambient Temp |
 
-These mappings were tested on the N5/F8NAA, not the N5 Air. The PCIe
+These mappings were tested on the N5/F8NAA, not the N5 Air. Board and Ambient
+are hidden on the N5 Air because their meanings are unverified. The PCIe
 `fan4_input` zero is a placeholder, not a measured RPM; the CLI reports it as
 unavailable.
 
@@ -91,7 +93,9 @@ experimental profiles; no compatibility guarantee is made for them.
 - Do not install a `.ko` built for a different kernel.
 - Confirm the physical fan-to-zone mapping before changing PWM values.
 - Assign each `pwmN` to one fan controller only.
-- Module unload restores only channels the module actually attempted to modify.
+- Module unload attempts to restore only channels it modified. A separate N5
+  Air report found that CPU fan channels required a reboot after PWM writes;
+  see the [Proxmox setup guide](docs/PROXMOX.md).
 
 ## License
 

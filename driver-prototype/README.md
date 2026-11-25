@@ -22,9 +22,14 @@ become abnormal, stop immediately and unload the module.
 | `temp3_input` | Board Temp | EC 0x05 |
 | `temp4_input` | Ambient Temp | EC 0x06 |
 
+On N5 Air, `temp3_input` and `temp4_input` and their labels are hidden because
+their meanings are unverified. The CPU and System mappings remain experimental.
+
 `pwmN_enable=1` selects manual control and `pwmN_enable=2` restores the native
-EC/BIOS automatic curve. Module removal restores channels that the module
-actually attempted to modify.
+EC/BIOS automatic curve. Module removal attempts to restore channels that the module
+actually attempted to modify, but a separate N5 Air report found that CPU fan
+channels required a reboot after PWM writes; see the
+[Proxmox setup guide](../docs/PROXMOX.md).
 
 The PCIe channel deliberately exports `fan4_input=0` because the original N5
 firmware has no fourth tachometer signal. The sensor CLI reports it as

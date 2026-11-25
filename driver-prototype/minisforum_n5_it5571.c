@@ -17,8 +17,9 @@
  *   3: HDD fan group (DCR3 + DCR4, TACH3)
  *   4: PCIe fan      (DCR5, no tachometer input)
  *
- * ACPI EC RAM provides four useful temperature bytes:
+ * ACPI EC RAM provides four temperature bytes on N5/F8NAA:
  *   0x09 CPU, 0x04 system, 0x05 board/aux, 0x06 ambient.
+ * Board and ambient are not exposed on the unvalidated N5 Air profile.
  */
 
 #include <linux/delay.h>
@@ -60,6 +61,7 @@ MODULE_PARM_DESC(experimental_write,
 struct n5_board_profile {
 	const char *name;
 	bool validated;
+	bool two_temperatures;
 };
 
 struct n5_data {
@@ -70,6 +72,7 @@ struct n5_data {
 	u8 pwm_enable[N5_PWM_CHANNELS];
 	bool pwm_touched[N5_PWM_CHANNELS];
 	bool write_enabled;
+	int temp_channels;
 };
 
 static struct platform_device *n5_pdev;
@@ -280,6 +283,8 @@ static umode_t n5_is_visible(const void *drvdata,
 
 	switch (type) {
 	case hwmon_temp:
+		if (channel >= data->temp_channels)
+			return 0;
 		switch (attr) {
 		case hwmon_temp_input:
 		case hwmon_temp_label:
@@ -322,7 +327,7 @@ static int n5_read(struct device *dev, enum hwmon_sensor_types type,
 
 	switch (type) {
 	case hwmon_temp:
-		if (attr != hwmon_temp_input || channel >= N5_TEMP_CHANNELS)
+		if (attr != hwmon_temp_input || channel >= data->temp_channels)
 			return -EOPNOTSUPP;
 		mutex_lock(&data->lock);
 		ret = n5_ec_read_locked(n5_temp_reg[channel], &temp);
@@ -364,8 +369,10 @@ static int n5_read(struct device *dev, enum hwmon_sensor_types type,
 static int n5_read_string(struct device *dev, enum hwmon_sensor_types type,
 			  u32 attr, int channel, const char **str)
 {
+	struct n5_data *data = dev_get_drvdata(dev);
+
 	if (type == hwmon_temp && attr == hwmon_temp_label &&
-	    channel < N5_TEMP_CHANNELS) {
+	    channel < data->temp_channels) {
 		*str = n5_temp_label[channel];
 		return 0;
 	}
@@ -496,6 +503,7 @@ static struct n5_board_profile n5_pro_f8naa = {
 static struct n5_board_profile n5_air_f8nab = {
 	.name = "Minisforum N5 Air / F8NAB",
 	.validated = false,
+	.two_temperatures = true,
 };
 
 static const struct dmi_system_id n5_dmi_table[] = {
@@ -582,6 +590,8 @@ static int n5_probe(struct platform_device *pdev)
 	}
 
 	mutex_init(&data->lock);
+	data->temp_channels = profile && profile->two_temperatures ?
+		2 : N5_TEMP_CHANNELS;
 	data->write_enabled = profile && profile->validated;
 	if (!data->write_enabled && experimental_write)
 		data->write_enabled = true;
@@ -614,7 +624,8 @@ static int n5_probe(struct platform_device *pdev)
 			 profile ? profile->name : "force-loaded unknown system");
 	}
 	dev_info(&pdev->dev,
-		 "registered 4 fan and 4 temperature channels%s\n",
+		 "registered 4 fan and %d temperature channels%s\n",
+		 data->temp_channels,
 		 data->write_enabled ? " plus 4 writable PWM channels" : "");
 	return 0;
 }

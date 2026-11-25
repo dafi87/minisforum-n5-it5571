@@ -9,6 +9,13 @@ See [the disclaimer](../DISCLAIMER.md). Stop and unload it if fans or
 temperatures behave unexpectedly. Do not enable `experimental_write` or run
 other EC probing/control tools concurrently.
 
+On N5 Air the driver hides the unverified Board and Ambient temperatures. CPU
+and System mappings remain experimental. A [separate single-device N5 Air
+report](https://github.com/outlawpractice/minisforum-n5-fan-control#fail-safe)
+found that CPU fan channels did not return to firmware control after PWM
+writes until reboot; do not assume restoring automatic mode works on this
+profile. This does not apply to a read-only session that has made no PWM writes.
+
 Build the module on the Proxmox host against the headers for its running
 kernel. The following assumes `make`, a C compiler, Python 3, and matching
 headers are already installed:
@@ -64,17 +71,29 @@ not by a changing `hwmonN` number. It needs read access to sysfs; it does not
 need root when those files are readable. `--json` produces one JSON object:
 
 ```json
-{"temperatures_c":{"cpu":42.0,"system":33.0,"board":30.0,"ambient":25.0},"fans_rpm":{"cpu":1200,"ssd":900,"hdd":850,"pcie":null}}
+{"temperatures_c":{"cpu":25.0,"system":22.0},"fans_rpm":{"cpu":0,"ssd":2234,"hdd":1244,"pcie":null},"memory_temperatures_c":{"0-0051":22.75},"nic_temperatures_c":{"r8169_0_200:00":26.0,"r8169_0_300:00":27.5}}
 ```
 
 Temperatures are Celsius and fan speeds are integer RPM. Keys describe the
-driver's **unverified N5 Air mapping**. `pcie` is always `null`: the existing
+driver's **unverified N5 Air mapping**. The CLI identifies N5 Air by its DMI
+product and board names and omits `board` and `ambient`, even with an older
+driver; other profiles still report them. Rebuild and reload the module to hide
+their hwmon files. `pcie` is always `null`: the existing
 driver reports `fan4_input` as zero without tachometer feedback, not a measured
 zero RPM. A temperature reported by the driver as unavailable is `null`, with a
 warning on stderr. Other read errors or a missing/ambiguous driver produce an
 error on stderr, no JSON, and a nonzero exit status. Check the exit status and
 omit null fields when sending data to InfluxDB; this tool does not write to a
 database or modify the Proxmox web UI.
+
+When present, `memory_temperatures_c` contains SPD5118 memory sensors keyed by
+their I2C device names, and `nic_temperatures_c` contains Realtek r8169 PHY
+sensors keyed by their hwmon names. These identifiers do not depend on the
+`hwmonN` number but can change if bus enumeration or hardware changes. Each
+group is omitted when no matching sensor is present; if a detected sensor
+cannot be read, the command fails instead of silently omitting it. These sensors
+come from their own kernel drivers and do not require the N5 module to expose
+them, though the CLI still requires the N5 module.
 
 For troubleshooting, collect `uname -r`, the DMI product and board names,
 `modinfo` output, relevant `dmesg` messages, and the CLI output. Avoid sharing

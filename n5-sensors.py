@@ -9,20 +9,25 @@ import sys
 from pathlib import Path
 
 HWMON_ROOT = Path("/sys/class/hwmon")
+DMI_ROOT = Path("/sys/class/dmi/id")
 DRIVER_NAME = "minisforum_n5_it5571"
 TEMPERATURES = ("cpu", "system", "board", "ambient")
 FANS = ("cpu", "ssd", "hdd")
 
 
-def find_device(root):
-    matches = []
+def find_devices(root):
+    devices = []
     for path in sorted(root.glob("hwmon*")):
         try:
             name = (path / "name").read_text().strip()
         except FileNotFoundError:
             continue
-        if name == DRIVER_NAME:
-            matches.append(path)
+        devices.append((path, name))
+    return devices
+
+
+def find_n5_device(devices):
+    matches = [path for path, name in devices if name == DRIVER_NAME]
     if not matches:
         raise RuntimeError(
             "N5 hwmon device not found; check that the driver loaded and bound "
@@ -50,11 +55,40 @@ def read_value(path, *, temperature=False):
     return value / 1000 if temperature else value
 
 
+def read_extra_temperatures(devices):
+    memory = {}
+    nics = {}
+    for path, name in devices:
+        if name == "spd5118":
+            group = memory
+            identity = (path / "device").resolve(strict=True).name
+        elif name.startswith("r8169_"):
+            group = nics
+            identity = name
+        else:
+            continue
+        if identity in group:
+            raise RuntimeError(f"duplicate sensor identity {identity!r}")
+        group[identity] = read_value(path / "temp1_input", temperature=True)
+    extra = {}
+    if memory:
+        extra["memory_temperatures_c"] = memory
+    if nics:
+        extra["nic_temperatures_c"] = nics
+    return extra
+
+
 def read_sensors(root):
-    device = find_device(root)
+    devices = find_devices(root)
+    device = find_n5_device(devices)
+    product = (DMI_ROOT / "product_name").read_text().strip()
+    board = (DMI_ROOT / "board_name").read_text().strip()
+    temperature_names = TEMPERATURES[:2] if (
+        product in ("N5A", "N5 AIR") and board == "F8NAB"
+    ) else TEMPERATURES
     temperatures = {
         name: read_value(device / f"temp{index}_input", temperature=True)
-        for index, name in enumerate(TEMPERATURES, 1)
+        for index, name in enumerate(temperature_names, 1)
     }
     fans = {
         name: read_value(device / f"fan{index}_input")
@@ -62,7 +96,9 @@ def read_sensors(root):
     }
     # The driver exports fan4 as zero without a tachometer, not a measured RPM.
     fans["pcie"] = None
-    return {"temperatures_c": temperatures, "fans_rpm": fans}
+    result = {"temperatures_c": temperatures, "fans_rpm": fans}
+    result.update(read_extra_temperatures(devices))
+    return result
 
 
 def main():
@@ -80,6 +116,13 @@ def main():
         print("Temperatures (C):")
         for name, value in sensors["temperatures_c"].items():
             print(f"  {name}: {value:.3f}" if value is not None else f"  {name}: unavailable")
+        for key, label in (("memory_temperatures_c", "Memory"),
+                           ("nic_temperatures_c", "NIC")):
+            if key in sensors:
+                print(f"{label} temperatures (C):")
+                for name, value in sensors[key].items():
+                    print(f"  {name}: {value:.3f}" if value is not None
+                          else f"  {name}: unavailable")
         print("Fans (RPM):")
         for name, value in sensors["fans_rpm"].items():
             print(f"  {name}: {value}" if value is not None else f"  {name}: unavailable")
