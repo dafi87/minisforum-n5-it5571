@@ -18,11 +18,12 @@ profile. This does not apply to a read-only session that has made no PWM writes.
 
 ## Install with DKMS
 
-On the Proxmox host, install DKMS and the build tools, and verify that the
-running kernel's headers are present:
+Run the installation and removal commands as root on the Proxmox host. Install
+DKMS and the build tools, and verify that the running kernel's headers are
+present:
 
 ```bash
-sudo apt install dkms build-essential
+apt install dkms build-essential
 uname -r
 ls -l "/lib/modules/$(uname -r)/build/Makefile"
 ```
@@ -30,7 +31,7 @@ ls -l "/lib/modules/$(uname -r)/build/Makefile"
 If the header check fails, install the headers matching `uname -r`:
 
 ```bash
-sudo apt install "proxmox-headers-$(uname -r)"
+apt install "proxmox-headers-$(uname -r)"
 ```
 
 For automatic rebuilds after future updates, also install the header metapackage
@@ -38,7 +39,7 @@ for the kernel series you follow. For the reported 7.0 series:
 
 ```bash
 apt-cache depends proxmox-headers-7.0
-sudo apt install proxmox-headers-7.0
+apt install proxmox-headers-7.0
 ```
 
 Check APT's proposed changes before accepting: the metapackage may bring in
@@ -50,10 +51,10 @@ for the running kernel:
 
 ```bash
 cd driver-prototype
-sudo mkdir /usr/src/minisforum_n5_it5571-0.2.0 &&
-  sudo install -m 0644 dkms.conf Makefile minisforum_n5_it5571.c /usr/src/minisforum_n5_it5571-0.2.0/ &&
-  sudo dkms add -m minisforum_n5_it5571 -v 0.2.0 &&
-  sudo dkms install -m minisforum_n5_it5571 -v 0.2.0 -k "$(uname -r)"
+mkdir /usr/src/minisforum_n5_it5571-0.2.0 &&
+  install -m 0644 dkms.conf Makefile minisforum_n5_it5571.c /usr/src/minisforum_n5_it5571-0.2.0/ &&
+  dkms add -m minisforum_n5_it5571 -v 0.2.0 &&
+  dkms install -m minisforum_n5_it5571 -v 0.2.0 -k "$(uname -r)"
 ```
 
 The `mkdir` intentionally fails rather than overwrite an existing source
@@ -65,13 +66,13 @@ If the module is already loaded from an earlier manual test, unload it first
 while still in read-only mode:
 
 ```bash
-sudo rmmod minisforum_n5_it5571
+rmmod minisforum_n5_it5571
 ```
 
 Then test the DKMS-installed module, without enabling PWM writes:
 
 ```bash
-sudo modprobe minisforum_n5_it5571
+modprobe minisforum_n5_it5571
 dkms status minisforum_n5_it5571/0.2.0
 modinfo -n minisforum_n5_it5571
 modinfo -F vermagic minisforum_n5_it5571
@@ -96,7 +97,7 @@ host's signing and key-enrollment policy; do not disable Secure Boot to load it.
 Only after verifying the readings, configure loading at boot:
 
 ```bash
-echo minisforum_n5_it5571 | sudo tee /etc/modules-load.d/minisforum-n5-it5571.conf
+echo minisforum_n5_it5571 | tee /etc/modules-load.d/minisforum-n5-it5571.conf
 ```
 
 DKMS attempts to build and install this version for new kernels automatically
@@ -111,9 +112,9 @@ To uninstall, remove the modules-load configuration, unload the driver, and
 remove its DKMS registration:
 
 ```bash
-sudo rm /etc/modules-load.d/minisforum-n5-it5571.conf
-sudo modprobe -r minisforum_n5_it5571
-sudo dkms remove -m minisforum_n5_it5571 -v 0.2.0 --all
+rm /etc/modules-load.d/minisforum-n5-it5571.conf
+modprobe -r minisforum_n5_it5571
+dkms remove -m minisforum_n5_it5571 -v 0.2.0 --all
 ```
 
 DKMS may restore a previously installed same-named module when removing its
