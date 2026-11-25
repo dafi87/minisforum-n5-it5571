@@ -13,11 +13,10 @@ The `minisforum_n5_it5571` driver and all materials in this repository
 - **NOT an official product.** Minisforum provides no warranty, support, or
   liability for this project.
 
-This is an early (v0.2.0) community release. Although the driver was fully
-tested on the author's hardware (N5 / F8NAA / BIOS 1.04 / Unraid 7.3.2 /
-kernel 6.18.38-Unraid), it **contains unverified factors**: hardware batches,
-BIOS/EC firmware versions, kernel versions, and third-party software
-combinations may behave differently.
+This is an early community driver. It was tested on the original author's N5 / F8NAA
+with BIOS 1.04, but N5 Air and Proxmox remain unvalidated. It **contains
+unverified factors**: hardware batches, BIOS/EC firmware versions, kernel
+versions, and third-party software combinations may behave differently.
 
 **THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -33,7 +32,7 @@ By installing or using this driver you agree that:
    require explicit opt-in before PWM writes are exposed.
 2. You assign each fan channel (`pwm1`–`pwm4`) to exactly one controller to
    avoid conflicting control loops.
-3. You install a kernel-matched package after every Unraid kernel update.
+3. You rebuild and install a kernel-matched module after every kernel update.
 4. You accept full responsibility for any outcome of using this driver.
 
 If you do not agree with these terms, do not install or use this software.
@@ -48,8 +47,8 @@ If you do not agree with these terms, do not install or use this software.
 - **与 Minisforum（铭凡 / 深圳美高电子设备有限公司）无关，未获其认可或支持。**
 - **非官方产品。** 官方对本项目不提供任何质保、支持或责任。
 
-本版本为早期（v0.2.0）社区版。虽然驱动已在作者实机（N5 / F8NAA / BIOS 1.04 /
-Unraid 7.3.2 / 内核 6.18.38-Unraid）上完成全流程测试，但**仍包含未验证因素**：
+本驱动为早期社区版。虽然驱动已在作者实机（N5 / F8NAA / BIOS 1.04）上测试，
+N5 Air 和 Proxmox 尚未验证，且**仍包含未验证因素**：
 不同硬件批次、BIOS/EC 固件版本、内核版本及第三方软件组合下，行为可能存在差异。
 
 **本软件按“现状”提供，不作任何明示或默示担保，包括但不限于适销性、特定用途
@@ -61,7 +60,7 @@ Unraid 7.3.2 / 内核 6.18.38-Unraid）上完成全流程测试，但**仍包含
 1. 已确认准确 DMI 配置。N5/F8NAA 已验证；N5 Pro/F8NAA 与 N5 Air/F8NAB
    属于实验性配置，默认只读，开放 PWM 写入前必须由用户显式确认。
 2. 每路风扇通道（`pwm1`–`pwm4`）只交给一个控制器管理，避免控制环冲突。
-3. 每次升级 Unraid 内核后安装与内核严格匹配的新驱动包。
+3. 每次升级内核后重新构建并安装与内核严格匹配的驱动模块。
 4. 自行承担使用本驱动产生的一切后果。
 
 如不同意以上条款，请勿安装或使用本软件。

@@ -1,8 +1,8 @@
-# Minisforum N5 family / IT5571 Unraid hwmon driver
+# Minisforum N5 family / IT5571 hwmon driver
 
-This package is built and validated for Unraid 7.3.2 with kernel
-`6.18.38-Unraid`. It exposes the Minisforum N5 IT5571 fan controller and EC
-temperatures through the standard Linux hwmon ABI.
+This driver exposes the Minisforum N5 IT5571 fan controller and EC
+temperatures through the standard Linux hwmon ABI. Build it for the running
+kernel; see the [Proxmox setup guide](../docs/PROXMOX.md).
 
 N5/F8NAA is validated. N5 Pro/F8NAA and N5 Air/F8NAB are experimental and
 load in read-only sensor mode unless `experimental_write=1` is explicitly set.
@@ -26,36 +26,6 @@ become abnormal, stop immediately and unload the module.
 EC/BIOS automatic curve. Module removal restores channels that the module
 actually attempted to modify.
 
-## Unraid integration
-
-The deployed boot script loads the driver from
-`/boot/config/plugins/n5-ec-hwmon/` and adds `minisforum_n5_it5571` to the Dynamix System
-Temp available-driver list. Fan Auto Control discovers all four `pwmN` nodes.
-The PCIe channel deliberately exports `fan4_input=0` because the board firmware
-has no fourth tachometer signal.
-
-System Temp can select `CPU Temp`, `System Temp`, `Board Temp`, or `Ambient Temp`.
-For CPU display, the existing `k10temp` sensor remains the most precise source;
-the N5 EC CPU reading is also available.
-
-## Optional PCIe temperature linkage
-
-`pcie-autofan.conf` is installed with `ENABLE=0`, because no PCIe fan is
-currently connected. After connecting one, set `TEMP_HWMON_NAME` and
-`TEMP_CHANNEL` for the PCIe device probe, test the values, then set `ENABLE=1`.
-The controller maps `TEMP_LOW..TEMP_HIGH` to `PWM_LOW..PWM_HIGH`; if the source
-disappears it forces full speed. Stop it with:
-
-```bash
-/bin/bash /boot/config/plugins/n5-ec-hwmon/n5-pcie-autofan stop
-```
-
-## Kernel upgrades and rollback
-
-The `.ko` is kernel-specific. After an Unraid kernel update it must be rebuilt
-for the new `uname -r`; the installer intentionally refuses a mismatched module.
-Rollback is:
-
-```bash
-/bin/bash /boot/config/plugins/n5-ec-hwmon/uninstall-driver.sh
-```
+The PCIe channel deliberately exports `fan4_input=0` because the original N5
+firmware has no fourth tachometer signal. The sensor CLI reports it as
+unavailable. N5 Air channel mappings and Proxmox builds remain unvalidated.
