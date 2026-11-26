@@ -66,8 +66,9 @@ python3 n5-sensors.py
 python3 n5-sensors.py --json
 ```
 
-The JSON output is suitable for a separate InfluxDB logging script. This
-repository does not currently integrate with InfluxDB or the Proxmox web UI.
+For optional host-health logging to InfluxDB, see the
+[hwlog installation guide](docs/HWLOG.md). There is no Proxmox web UI
+integration.
 
 ## Disclaimer
 

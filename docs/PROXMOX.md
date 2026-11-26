@@ -16,6 +16,11 @@ found that CPU fan channels did not return to firmware control after PWM
 writes until reboot; do not assume restoring automatic mode works on this
 profile. This does not apply to a read-only session that has made no PWM writes.
 
+```bash
+cd /usr/local/src
+git clone https://github.com/dafi87/minisforum-n5-it5571.git
+```
+
 ## Install with DKMS
 
 Run the installation and removal commands as root on the Proxmox host. Install

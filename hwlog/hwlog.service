@@ -1,0 +1,6 @@
+[Unit]
+Description=Log hardware sensors to InfluxDB
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/src/minisforum-n5-it5571/hwlog/hwlog.py --mode fast --write
