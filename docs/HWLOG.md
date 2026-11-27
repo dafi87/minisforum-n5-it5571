@@ -112,6 +112,29 @@ To apply an updated service file to an existing installation, repeat the
 installation command above and run `systemctl daemon-reload`. Avoid sharing
 credentials or sensitive host information when requesting help.
 
+## Grafana dashboard
+
+Configure an InfluxDB data source using **InfluxQL**, then import
+[grafana-dashboard.json](../hwlog/grafana-dashboard.json) through Grafana's
+**Dashboards > New > Import**, selecting that data source during import. Select
+a host using the dashboard's **Host** dropdown. The data source must query the
+`hwlog` database (or a database mapped to the `hwlog` bucket).
+
+For InfluxDB 2.x, InfluxQL uses a database/retention-policy (DBRP) mapping to
+the bucket. Check the [InfluxDB DBRP mapping guide](https://docs.influxdata.com/influxdb/v2/query-data/influxql/dbrp/)
+and use the mapped database name in Grafana. Configure an `Authorization`
+custom HTTP header with `Token <read-token>`; the token needs read access to
+the bucket. Grafana's [InfluxDB data source guide](https://grafana.com/docs/grafana/latest/datasources/influxdb/configure/)
+has connection details. Keep tokens out of the dashboard JSON.
+
+The host dropdown lists hosts with memory data in the last 30 days. SMART runs
+approximately every 15 minutes; short time ranges, sleeping drives, unsupported
+attributes, or missing sensors can produce empty panels. The health panel shows
+the last status *within the selected range*, not a live health guarantee.
+Time-series panels connect gaps only up to the 15-minute threshold.
+When migrating to InfluxDB 3, configure its InfluxQL data source for the new
+database and verify the dashboard against the migrated data.
+
 ## Collected data
 
 - `fast`: `temperature`, `power` and `fan_rpm` from the configured
