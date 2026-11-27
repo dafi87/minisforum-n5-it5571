@@ -68,8 +68,8 @@ SSD_ATTRS = [
     ("Power_On_Hours",          "power_on_hours",          "raw"),
     ("Reallocated_Sector_Ct",   "reallocated_sector_ct",   "raw"),
     ("Uncorrectable_Error_Cnt", "uncorrectable_error_cnt", "raw"),
-    ("Remaining_Lifetime_Perc", "remaining_lifetime_perc", "norm"),
-    ("Available_Reservd_Space", "available_reservd_space", "norm"),
+    ("Remaining_Lifetime_Perc", "remaining_lifetime_perc", "raw"),
+    ("Available_Reservd_Space", "available_reservd_space", "raw"),
 ]
 # (key in smartctl's nvme_smart_health_information_log, metric name)
 NVME_FIELDS = [
