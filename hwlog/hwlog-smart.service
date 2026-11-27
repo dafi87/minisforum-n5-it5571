@@ -3,4 +3,6 @@ Description=Log SMART data to InfluxDB
 
 [Service]
 Type=oneshot
+LogLevelMax=notice
+SyslogLevel=warning
 ExecStart=/usr/local/src/minisforum-n5-it5571/hwlog/hwlog.py --mode smart --write

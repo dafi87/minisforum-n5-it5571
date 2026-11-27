@@ -106,8 +106,11 @@ journalctl -u hwlog.service -u hwlog-smart.service -b
 ```
 
 HTTP errors, connection failures and missing sensor warnings appear in the
-journal. Avoid sharing credentials or sensitive host information when
-requesting help.
+journal. The services suppress routine systemd start and stop messages;
+its output is logged at warning level so diagnostic messages remain visible.
+To apply an updated service file to an existing installation, repeat the
+installation command above and run `systemctl daemon-reload`. Avoid sharing
+credentials or sensitive host information when requesting help.
 
 ## Collected data
 
