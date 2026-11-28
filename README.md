@@ -6,8 +6,10 @@
 
 
 `minisforum_n5_it5571` is a Linux hwmon driver for the Minisforum N5 family and
-its ITE IT5571 EC. N5/F8NAA is hardware-validated. The Python CLI reads temperatures and fan RPM in human
-readable or JSON form for use in scripts.
+its ITE IT5571 EC. N5/F8NAA is hardware-validated, and the N5 Air/F8NAB sensor
+build running BIOS 1.01 has now been hardware-validated on Proxmox in read-only
+mode. The Python CLI reads temperatures and fan RPM in human readable or JSON
+form for use in scripts.
 
 ## Features
 
@@ -22,19 +24,22 @@ readable or JSON form for use in scripts.
 |---|---|---|---|
 | Minisforum N5 / `N5` | `F8NAA` | Hardware-validated (BIOS 1.04) | PWM enabled |
 | Minisforum N5 Pro / `N5 PRO` | `F8NAA` | Experimental | Read-only sensors |
-| Minisforum N5 Air / `N5A` or `N5 AIR` | `F8NAB` | Experimental | Read-only sensors |
+| Minisforum N5 Air / `N5A` or `N5 AIR` | `F8NAB` | Hardware-validated (BIOS 1.01, Proxmox; sensors only) | Read-only sensors |
 
-The original N5/F8NAA was tested with BIOS 1.04. N5 Air sensor mappings and
-Proxmox builds have **not** been hardware-validated. DKMS builds the module
-for matching installed kernels; kernel updates can still require driver fixes.
+The original N5/F8NAA was tested with BIOS 1.04. N5 Air/F8NAB sensor readings
+and the Proxmox build have been hardware-validated with BIOS 1.01 in read-only
+mode. PWM values have **not** been written or tested on N5 Air. DKMS builds the
+module for matching installed kernels; kernel updates can still require driver fixes.
 
 Unknown DMI pairs are rejected unless a developer uses
 the read-only `force=1` override.
 
 Using the same IT5571 chip does not imply drop-in compatibility. Vendors may use
 different PMC commands, ports, EC RAM layouts, and fan wiring. The compatibility
-list still contains only one fully validated profile: N5/F8NAA. N5 Pro and N5
-Air must be tested one physical fan at a time before they can be promoted.
+list now includes two hardware-validated profiles: N5/F8NAA with PWM control,
+and N5 Air/F8NAB with read-only sensor access on Proxmox. N5 Pro/F8NAA and N5
+Air PWM writes still require physical testing one fan at a time before they can
+be promoted.
 
 Do not enable experimental PWM writes on the N5 Air while validating sensors.
 
@@ -51,10 +56,11 @@ Do not enable experimental PWM writes on the N5 Air while validating sensors.
 | `temp3_input` | Board Temp |
 | `temp4_input` | Ambient Temp |
 
-These mappings were tested on the N5/F8NAA, not the N5 Air. Board and Ambient
-are hidden on the N5 Air because their meanings are unverified. The PCIe
-`fan4_input` zero is a placeholder, not a measured RPM; the CLI reports it as
-unavailable.
+The CPU and System mappings, plus the N5 Air read-only sensor build, were
+hardware-validated on N5 Air/F8NAB with BIOS 1.01 and Proxmox. Board and
+Ambient are hidden on the N5 Air because their meanings are unverified. The
+PCIe `fan4_input` zero is a placeholder, not a measured RPM; the CLI reports
+it as unavailable.
 
 ## Installation
 
@@ -79,8 +85,10 @@ author accepts no liability for any direct or indirect loss — including
 hardware damage, fan-stall overheating, or data loss — arising from the use of
 this driver. See [DISCLAIMER.md](DISCLAIMER.md) for the full terms.
 
-Only N5/F8NAA is fully validated. N5 Pro/F8NAA and N5 Air/F8NAB are opt-in
-experimental profiles; no compatibility guarantee is made for them.
+N5/F8NAA is validated for PWM and sensor operation. N5 Air/F8NAB is validated
+for read-only sensor operation on BIOS 1.01 with Proxmox. N5 Air PWM writes have
+not been tested. N5 Pro/F8NAA remains experimental; no compatibility guarantee
+is made beyond the validated scopes above.
 
 ## Safety
 
@@ -102,6 +110,13 @@ experimental profiles; no compatibility guarantee is made for them.
 
 The driver source is intended for release under GPL-2.0-only. The repository
 must not redistribute vendor EC firmware or the confidential IT5571 datasheet.
+
+## Credits
+
+This repository is a fork of the original community work at
+[ltdstudio/minisforum-n5-it5571](https://github.com/ltdstudio/minisforum-n5-it5571).
+We credit its author and contributors for the original driver, reverse
+engineering, documentation, and validation work.
 
 ## Support
 

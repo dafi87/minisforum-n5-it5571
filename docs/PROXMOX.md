@@ -1,9 +1,9 @@
 # Proxmox VE: N5 sensor readings
 
-The N5 Air (`N5A` / `F8NAB`) is already recognized by the driver, but its
-registers, channel labels, and readings are **experimental**, inferred from the
-N5/F8NAA, not verified on N5 Air hardware. Proxmox builds have not been
-hardware-validated. The driver accesses EC I/O ports even in read-only mode;
+The N5 Air (`N5A` / `F8NAB`) is recognized by the driver, and its sensor
+readings and the Proxmox build have now been hardware-validated with BIOS 1.01
+in read-only mode. PWM values have not been written or tested on N5 Air. The
+driver accesses EC I/O ports even in read-only mode;
 read-only means it does not change fan settings, not that EC access is risk-free.
 See [the disclaimer](../DISCLAIMER.md). Stop and unload it if fans or
 temperatures behave unexpectedly. Do not enable `experimental_write` or run

@@ -24,27 +24,6 @@ import urllib.parse
 import urllib.request
 
 DEFAULT_CONFIG = "/etc/hwlog.conf"
-IT = "minisforum_n5_it5571-isa-0000"
-
-# (measurement, tag key, tag value, chip, label, kind)
-# kind: temp | fan | power  (selects the temp1_input / fan1_input / power1_* key)
-SENSORS = [
-    ("temperature", "sensor", "cpu",         IT,                       "CPU Temp",    "temp"),
-    ("temperature", "sensor", "cpu_k10",     "k10temp-pci-00c3",       "Tctl",        "temp"),
-    ("temperature", "sensor", "system",      IT,                       "System Temp", "temp"),
-    ("temperature", "sensor", "nic_10gbe",   "r8169_0_200:00-mdio-0",  "temp1",       "temp"),
-    ("temperature", "sensor", "nic_5gbe",    "r8169_0_300:00-mdio-0",  "temp1",       "temp"),
-    ("temperature", "sensor", "nvme_os",     "nvme-pci-0100",          "Composite",   "temp"),
-    ("temperature", "sensor", "nvme_cmp600", "nvme-pci-0400",          "Composite",   "temp"),
-    ("temperature", "sensor", "ram_spd5118", "spd5118-i2c-0-51",       "temp1",       "temp"),
-    ("temperature", "sensor", "gpu",         "amdgpu-pci-c600",        "edge",        "temp"),
-    # APU package power as reported by amdgpu
-    ("power",       "sensor", "gpu_package", "amdgpu-pci-c600",        "PPT",         "power"),
-    ("fan_rpm",     "fan",    "cpu",         IT,                       "CPU Fan",     "fan"),
-    ("fan_rpm",     "fan",    "ssd",         IT,                       "SSD Fan",     "fan"),
-    ("fan_rpm",     "fan",    "hdd",         IT,                       "HDD Fan",     "fan"),
-]
-
 # (field name in InfluxDB, key in /proc/meminfo) -> logged in bytes
 MEM_FIELDS = [
     ("total",      "MemTotal"),
@@ -53,32 +32,6 @@ MEM_FIELDS = [
     ("swap_total", "SwapTotal"),
     ("swap_free",  "SwapFree"),
 ]
-
-# SMART attributes per drive type:
-# (smartctl attribute name, metric name in InfluxDB, "raw" or "norm")
-# "raw" = raw counter, "norm" = normalized value (a percentage for the two
-# SSD life/reserve attributes). Attributes a drive doesn't report are skipped.
-HDD_ATTRS = [
-    ("Start_Stop_Count",        "start_stop_count",        "raw"),
-    ("Power_On_Hours",          "power_on_hours",          "raw"),
-    ("Load_Cycle_Count",        "load_cycle_count",        "raw"),
-    ("Reallocated_Sector_Ct",   "reallocated_sector_ct",   "raw"),
-]
-SSD_ATTRS = [
-    ("Power_On_Hours",          "power_on_hours",          "raw"),
-    ("Reallocated_Sector_Ct",   "reallocated_sector_ct",   "raw"),
-    ("Uncorrectable_Error_Cnt", "uncorrectable_error_cnt", "raw"),
-    ("Remaining_Lifetime_Perc", "remaining_lifetime_perc", "raw"),
-    ("Available_Reservd_Space", "available_reservd_space", "raw"),
-]
-# (key in smartctl's nvme_smart_health_information_log, metric name)
-NVME_FIELDS = [
-    ("available_spare", "available_spare"),
-    ("percentage_used", "percentage_used"),
-    ("power_on_hours",  "power_on_hours"),
-    ("media_errors",    "media_errors"),   # Media and Data Integrity Errors
-]
-
 
 def warn(msg):
     print(f"hwlog: {msg}", file=sys.stderr)
@@ -128,13 +81,13 @@ def line(measurement, host, tags, fields, ts):
     return f"{measurement},host={esc(host)}{tag_str} {field_str} {ts}"
 
 
-def sensor_lines(host, ts):
+def sensor_lines(host, ts, sensors):
     data = run_json(["sensors", "-j"])
     if data is None:
         warn("could not read 'sensors -j'")
         return []
     lines = []
-    for measurement, tag_key, tag_val, chip, label, kind in SENSORS:
+    for measurement, tag_key, tag_val, chip, label, kind in sensors:
         value = get_value(data, chip, label, kind)
         if value is None:
             warn(f"no value for {chip} / {label}")
@@ -206,7 +159,7 @@ def raw_int(attr):
     return raw.get("value")
 
 
-def drive_lines(host, ts, want_temp, want_smart):
+def drive_lines(host, ts, want_temp, want_smart, hdd_attrs, ssd_attrs, nvme_fields):
     lines = []
     for dev in drive_devices():
         is_nvme = dev.startswith("nvme")
@@ -233,12 +186,12 @@ def drive_lines(host, ts, want_temp, want_smart):
 
         if nvme_log is not None:
             dtype = "nvme"
-            metrics = {name: nvme_log.get(key) for key, name in NVME_FIELDS}
+            metrics = {name: nvme_log.get(key) for key, name in nvme_fields}
         else:
             dtype = "hdd" if is_rotating(info, dev) else "ssd"
             attrs = {a["name"]: a for a in ata_table if "name" in a}
             metrics = {}
-            for attr_name, metric, source in (HDD_ATTRS if dtype == "hdd" else SSD_ATTRS):
+            for attr_name, metric, source in (hdd_attrs if dtype == "hdd" else ssd_attrs):
                 a = attrs.get(attr_name)
                 if a is None:
                     continue
@@ -265,16 +218,19 @@ def drive_lines(host, ts, want_temp, want_smart):
     return lines
 
 
-def collect(host, mode):
+def collect(host, mode, config):
     ts = int(time.time())
     fast = mode in ("fast", "all")
     smart = mode in ("smart", "all")
 
     lines = []
     if fast:
-        lines += sensor_lines(host, ts)
+        lines += sensor_lines(host, ts, config["sensors"])
         lines += system_lines(host, ts)
-    lines += drive_lines(host, ts, want_temp=fast, want_smart=smart)
+    lines += drive_lines(host, ts, want_temp=fast, want_smart=smart,
+                         hdd_attrs=config["hdd_attrs"],
+                         ssd_attrs=config["ssd_attrs"],
+                         nvme_fields=config["nvme_fields"])
     return lines
 
 
@@ -283,10 +239,36 @@ def load_config(path):
     if not cfg.read(path):
         warn(f"cannot read config file {path}")
         sys.exit(1)
-    if "influxdb" not in cfg:
-        warn(f"{path}: missing [influxdb] section")
+
+    required = ("influxdb", "sensors", "hdd_attrs", "ssd_attrs", "nvme_fields")
+    missing = [section for section in required if section not in cfg]
+    if missing:
+        warn(f"{path}: missing sections: {', '.join('[' + s + ']' for s in missing)}")
         sys.exit(1)
-    return cfg["influxdb"]
+
+    result = {"influxdb": cfg["influxdb"]}
+    shapes = {
+        "sensors": 6,
+        "hdd_attrs": 3,
+        "ssd_attrs": 3,
+        "nvme_fields": 2,
+    }
+    for section, width in shapes.items():
+        if "items" not in cfg[section]:
+            warn(f"{path}: [{section}] missing items")
+            sys.exit(1)
+        try:
+            items = json.loads(cfg[section]["items"])
+        except json.JSONDecodeError as e:
+            warn(f"{path}: [{section}] items must be valid JSON: {e}")
+            sys.exit(1)
+        if not isinstance(items, list) or any(
+                not isinstance(item, list) or len(item) != width
+                for item in items):
+            warn(f"{path}: [{section}] items must be an array of {width}-item arrays")
+            sys.exit(1)
+        result[section] = [tuple(item) for item in items]
+    return result
 
 
 def write(lines, s):
@@ -331,7 +313,8 @@ def main():
                     help=f"config file (default: {DEFAULT_CONFIG})")
     args = ap.parse_args()
 
-    lines = collect(socket.gethostname(), args.mode)
+    config = load_config(args.config)
+    lines = collect(socket.gethostname(), args.mode, config)
 
     if not args.write:
         print("\n".join(lines))
@@ -339,7 +322,7 @@ def main():
     if not lines:
         warn("nothing to write")
         sys.exit(1)
-    write(lines, load_config(args.config))
+    write(lines, config["influxdb"])
 
 
 if __name__ == "__main__":

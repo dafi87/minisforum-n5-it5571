@@ -1,9 +1,9 @@
 [Unit]
-Description=Run hwlog SMART collection every 15min
+Description=Run hwlog SMART collection every 30min
 
 [Timer]
 OnBootSec=2min
-OnUnitActiveSec=15min
+OnUnitActiveSec=30min
 AccuracySec=10s
 
 [Install]

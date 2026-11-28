@@ -1,8 +1,4 @@
-# DISCLAIMER / 免责声明
-
-**English** · 中文见下方
-
-## English
+# DISCLAIMER
 
 The `minisforum_n5_it5571` driver and all materials in this repository
 (documents, scripts, firmware analysis, measurements) are the result of an
@@ -14,7 +10,9 @@ The `minisforum_n5_it5571` driver and all materials in this repository
   liability for this project.
 
 This is an early community driver. It was tested on the original author's N5 / F8NAA
-with BIOS 1.04, but N5 Air and Proxmox remain unvalidated. It **contains
+with BIOS 1.04. N5 Air / F8NAB sensor readings and the Proxmox build have also
+been hardware-validated with BIOS 1.01 in read-only mode; PWM values were not
+written or tested on N5 Air. It **contains
 unverified factors**: hardware batches, BIOS/EC firmware versions, kernel
 versions, and third-party software combinations may behave differently.
 
@@ -37,30 +35,3 @@ By installing or using this driver you agree that:
 
 If you do not agree with these terms, do not install or use this software.
 
----
-
-## 中文
-
-`minisforum_n5_it5571` 驱动及本仓库中的全部材料（文档、脚本、固件分析、实测数据）
-均为 ltdstudio 的**独立社区探索成果**。本项目：
-
-- **与 Minisforum（铭凡 / 深圳美高电子设备有限公司）无关，未获其认可或支持。**
-- **非官方产品。** 官方对本项目不提供任何质保、支持或责任。
-
-本驱动为早期社区版。虽然驱动已在作者实机（N5 / F8NAA / BIOS 1.04）上测试，
-N5 Air 和 Proxmox 尚未验证，且**仍包含未验证因素**：
-不同硬件批次、BIOS/EC 固件版本、内核版本及第三方软件组合下，行为可能存在差异。
-
-**本软件按“现状”提供，不作任何明示或默示担保，包括但不限于适销性、特定用途
-适用性与非侵权保证。在任何情况下，作者均不对因使用本软件而产生的任何索赔、
-损害或其他责任负责，无论基于合同、侵权或其他原因。**
-
-安装或使用本驱动即表示您同意：
-
-1. 已确认准确 DMI 配置。N5/F8NAA 已验证；N5 Pro/F8NAA 与 N5 Air/F8NAB
-   属于实验性配置，默认只读，开放 PWM 写入前必须由用户显式确认。
-2. 每路风扇通道（`pwm1`–`pwm4`）只交给一个控制器管理，避免控制环冲突。
-3. 每次升级内核后重新构建并安装与内核严格匹配的驱动模块。
-4. 自行承担使用本驱动产生的一切后果。
-
-如不同意以上条款，请勿安装或使用本软件。

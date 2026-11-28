@@ -71,11 +71,13 @@ First inspect the line protocol without sending anything:
 /usr/local/src/minisforum-n5-it5571/hwlog/hwlog.py --mode all
 ```
 
-The default is a dry run, and does not read the configuration. Warnings about
-missing sensors can be expected when the host does not have the hard-coded
-devices. Compare their chip names and labels with `sensors -j`; adjust the
-`SENSORS` mapping in `hwlog.py` if your host enumerates them differently.
-Missing readings are skipped.
+The default is a dry run and reads the mapping and InfluxDB settings from the
+configuration. Warnings about missing sensors can be expected when the host
+does not have the configured devices. Compare their chip names and labels with
+`sensors -j`; adjust the `[sensors]` items in `hwlog.conf` if your host
+enumerates them differently. Missing readings are skipped. SATA and NVMe SMART
+attribute mappings are also configurable under `[hdd_attrs]`, `[ssd_attrs]`,
+and `[nvme_fields]`.
 
 Test a write using `/etc/hwlog.conf`:
 

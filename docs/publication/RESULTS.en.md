@@ -193,6 +193,12 @@ Validated:
 - Four EC temperatures.
 - Absence of usable PCIe RPM feedback.
 - Module load/unload, manual mode, and EC-auto restoration.
+- N5 Air / F8NAB sensor readings and the Proxmox build with BIOS 1.01 in
+  read-only mode.
+
+Not validated on N5 Air:
+
+- PWM value writes.
 
 Still required before public release:
 

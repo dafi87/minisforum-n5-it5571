@@ -4,8 +4,10 @@ This driver exposes the Minisforum N5 IT5571 fan controller and EC
 temperatures through the standard Linux hwmon ABI. For DKMS installation and
 kernel updates, see the [Proxmox setup guide](../docs/PROXMOX.md).
 
-N5/F8NAA is validated. N5 Pro/F8NAA and N5 Air/F8NAB are experimental and
-load in read-only sensor mode unless `experimental_write=1` is explicitly set.
+N5/F8NAA is validated. N5 Air/F8NAB sensor readings and the Proxmox build are
+hardware-validated with BIOS 1.01 in read-only mode. N5 Air PWM values have not
+been written or tested. N5 Pro/F8NAA remains experimental and loads in
+read-only sensor mode unless `experimental_write=1` is explicitly set.
 If a fan stops, runs unexpectedly, maps to the wrong channel, or temperatures
 become abnormal, stop immediately and unload the module.
 
@@ -33,4 +35,5 @@ channels required a reboot after PWM writes; see the
 
 The PCIe channel deliberately exports `fan4_input=0` because the original N5
 firmware has no fourth tachometer signal. The sensor CLI reports it as
-unavailable. N5 Air channel mappings and Proxmox builds remain unvalidated.
+unavailable. N5 Air CPU and System sensor mappings and the N5 Air Proxmox build
+are validated only for read-only operation on BIOS 1.01; PWM writes remain untested.

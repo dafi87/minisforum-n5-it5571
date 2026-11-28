@@ -173,7 +173,8 @@ Validated:
 - Absence of usable PCIe RPM feedback.
 - Module load/unload, manual mode, and EC-auto restoration.
 
-N5 Air and Proxmox have not been hardware-validated.
+N5 Air / F8NAB sensor readings and the Proxmox build have been hardware-validated
+with BIOS 1.01 in read-only mode. PWM values were not written or tested on N5 Air.
 
 ## 10. Publication boundary
 
